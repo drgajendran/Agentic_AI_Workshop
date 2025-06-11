@@ -1,0 +1,204 @@
+{
+  "name": "Local Weather Forecast",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {},
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b97fc14b-280a-4e75-a801-1a8e33bbe77a",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "http://api.openweathermap.org/data/2.5/weather?q=Coimbatore&appid=94d6b85072566b9d519b13bcf5b35e7c&units=metric",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "43474de6-cfd1-4efa-81c7-6aeb352cdcd3",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "29732d2b-6c59-4d5b-9658-9921f1a23147",
+              "name": "name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "4a1817df-a83c-4992-8606-9b708f7a6778",
+              "name": "main.temp",
+              "value": "={{ $json.main.temp }}",
+              "type": "string"
+            },
+            {
+              "id": "cf3d300b-ef1a-49a0-9af1-91c94ce1fbca",
+              "name": "weather",
+              "value": "={{ $json.weather[0].description }}",
+              "type": "string"
+            },
+            {
+              "id": "f471fb04-83a3-4977-b3cb-5a47ec88f06a",
+              "name": "main.humidity",
+              "value": "={{ $json.main.humidity }}",
+              "type": "string"
+            },
+            {
+              "id": "50ff1087-08f9-4d11-8536-231109dd63c3",
+              "name": "wind",
+              "value": "={{ $json.wind.speed }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        360,
+        0
+      ],
+      "id": "eb45f337-c18f-4084-a4ba-d422cecace55",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json['sajitha.b.cfc@snsgroups.com'] }}",
+        "subject": "Weather Alert",
+        "emailType": "text",
+        "message": "=☀️ Good Morning! Here's your local weather update:  📍 City:{{ $('Edit Fields').item.json.name }}  🌡️ Temperature:{{ $('Edit Fields').item.json.main.temp }}  °C 🌤️ Condition:{{ $('Edit Fields').item.json.weather }}  💧 Humidity:{{ $('Edit Fields').item.json.main.humidity }}  % 🌬️ Wind Speed:{{ $('Edit Fields').item.json.wind }}  m/s  Stay safe and have a great day!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        660,
+        0
+      ],
+      "id": "9c2b7dc2-fdba-43fc-a04c-8a7b660768a3",
+      "name": "Gmail",
+      "webhookId": "e05db3f3-c462-468a-b85e-d9862682c57c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "pitGALFamLphemZa",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1bPWSL0R4GOaz45JWgksAPRdmoC2lQmRAyPzoc-THhHQ",
+          "mode": "list",
+          "cachedResultName": "email_di_tes",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bPWSL0R4GOaz45JWgksAPRdmoC2lQmRAyPzoc-THhHQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bPWSL0R4GOaz45JWgksAPRdmoC2lQmRAyPzoc-THhHQ/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        520,
+        0
+      ],
+      "id": "0f5ef1a6-1b66-46fc-9aba-0c4e81523c32",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "cMnrYt1N9MeGHUzW",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        []
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "95c3c9c3-fa35-4829-9ee4-529f44d313c9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa0974c45422affc36bc961e06f7266d0ba522774bf5a498cda55b5e4c1154d0"
+  },
+  "id": "Cu04ScJGr27eDJwM",
+  "tags": []
+}
