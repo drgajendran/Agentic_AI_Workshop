@@ -1,0 +1,311 @@
+{
+  "name": "HR_Work_Flow",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Application Form ",
+        "formDescription": "Thanks for showing interest. Please fill in the details for the further process. All the very best! ",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Phone Number",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "E Mail ID",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Job Position Apply",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Upload Resume ",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "78521fff-82b5-4a78-8813-44de44cc2646",
+      "name": "On form submission",
+      "webhookId": "22c0770e-a9ce-4b37-859e-89f0e509a9c7"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "Upload_Resume_",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "8c2e948c-ab7a-4c0c-b135-eeedbb5c4476",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "schemaType": "manual",
+        "inputSchema": "{\n\"type\": \"object\"\n,\n\"properties\": {\n\"telephone\": {\n\"type\": \"string\"\n},\n\"city\": {\n\"type\": \"string\"\n},\n\"birthdate\": {\n\"type\": \"string\"\n},\n\"name\": {\n\"type\": \"string\"\n},\n\"email\": {\n\"type\": \"string\"\n},\n\"educational qualification\": {\n\"type\": \"string\"\n},\n\"job history\": {\n\"type\": \"string\"\n},\n\"skills\": {\n\"type\": \"string\"\n}\n}\n}",
+        "options": {
+          "systemPromptTemplate": "You are an expert extraction algorithm.\nOnly extract relevant information from the text.\nIf you do not know the value of an attribute asked to extract, you may omit the attribute's value.\nphone number should not contain '+'"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ],
+      "id": "ba2bd80e-02ba-4b90-b9a5-3a5385e7075f",
+      "name": "Information Extractor"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        540,
+        220
+      ],
+      "id": "e09b27e4-c144-4aaa-bcfa-ca94eb199853",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UGdg8RwoTNJCygPb",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Individual Summary Prompt:\nWrite a concise summary of the following:\nEducational qualification: {{ $json.output['educational qualification'] }}\nJob History: {{ $json.output['job history'] }}\nSkills: {{ $json.output.skills }}\nUse 100 words or less. Be concise and conversational.\nFinal Prompt to Combine:\nWrite a concise summary of the following:\nCity: [No input connected]\nBirthdate: [No input connected]\nEducational qualification: [No input connected]\nJob History: [No input connected]\nSkills: [No input connected]\nUse 100 words or less. Be concise and conversational.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        800,
+        0
+      ],
+      "id": "b11a25af-d5fc-4700-9d4d-a73e24ad6af7",
+      "name": "Skill Summarise"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "16d3ad77-b3ad-4480-a211-3fd7d5eb84a2",
+              "name": "Job _ Description ",
+              "value": "We are a web agency seeking a full-stack web developer proficient in Python, and HTML CSS , monog db. He has experience in GitHub and is apable of working hard",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1160,
+        0
+      ],
+      "id": "22eeb5e4-f8be-4b3f-8c5b-5918712aee87",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert HR professional and you need to assess whether the candidate matches the\nprofile sought by the company. You must give a score from 1 to 10, where 1 means the\ncandidate is not aligned with the requirements, and 10 means the candidate is ideal because\nthey fully match the desired profile. Additionally, in the \"consideration\" field, you must explain the\nreason behind the score you assigned.\nProfile Desired:{{ $json['Job _ Description '] }}\nCandidate:{{ $('Skill Summarise').item.json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1380,
+        0
+      ],
+      "id": "cf8676b9-4888-43fd-8da2-726d376f8684",
+      "name": "Score Evaluator"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional HR assistant. Based on our automated resume screening process,\ndecide which email content to generate:\nIf the candidate's screening score {{ $json.output }} is greater than 5, write a brief and\nprofessional congratulatory email to inform them that their resume has been shortlisted for the\nfirst round. Address the candidate by name:\nOtherwise, politely inform them that they have not been selected for the current opportunity.\nDo not include any links or subjects.\nOnly return the email content body, concise and professional.\nmake it more professional , dont mention the company name or best regards\ndraft a email your a professional email writer , just return only the content to send in the email\nwithout the subject",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1740,
+        0
+      ],
+      "id": "9fc54a14-664b-4498-becd-00ee3cf264ff",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json['E Mail ID'] }}",
+        "subject": "Hi ! you are selected ",
+        "emailType": "text",
+        "message": "Happy to share that you are selected ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2100,
+        0
+      ],
+      "id": "022336bd-0ea3-4eff-8a4b-e73390643c58",
+      "name": "Gmail",
+      "webhookId": "00c373ef-e08e-41ca-a7de-29095964c7d8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "pitGALFamLphemZa",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Skill Summarise",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Score Evaluator",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Skill Summarise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skill Summarise": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Score Evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Evaluator": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1a4d698a-b731-4e75-a9c3-814b9f5b074f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa0974c45422affc36bc961e06f7266d0ba522774bf5a498cda55b5e4c1154d0"
+  },
+  "id": "f2PK9QUIEewFEu78",
+  "tags": []
+}
